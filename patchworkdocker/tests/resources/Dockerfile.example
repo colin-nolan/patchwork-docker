@@ -1,4 +1,4 @@
-FROM alpine:3.5
+FROM ubuntu:16.04
 
 COPY . /data
 WORKDIR /data

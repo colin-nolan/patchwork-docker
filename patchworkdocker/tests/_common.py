@@ -12,6 +12,7 @@ class TestWithTempFiles(unittest.TestCase, metaclass=ABCMeta):
     TODO
     """
     def setUp(self):
+        #
         self._paths: List[str] = []
 
     def tearDown(self):

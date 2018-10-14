@@ -1,18 +1,15 @@
 import os
+import shutil
 import unittest
 from pathlib import Path
 
-import re
-
-from patchworkdocker.modifiers import copy_additional_files, replace_in_string
+from patchworkdocker.modifiers import copy_additional_files, apply_patch
 from patchworkdocker.tests._common import TestWithTempFiles
 
-
-_EXAMPLE_DOCKERFILE_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_resources/Dockerfile.example")
+_RESOURCES_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources")
 
 _EXAMPLE_FILE_NAME = "test-file"
 _EXAMPLE_FILE_NAME_2 = "test-file-2"
-_EXAMPLE_STRING = "test"
 
 
 class TestCopyAdditionalFiles(TestWithTempFiles):
@@ -82,105 +79,37 @@ class TestCopyAdditionalFiles(TestWithTempFiles):
         self.assertEquals(1, len(os.listdir(self.dest_directory)))
 
 
-class TestReplaceInString(TestWithTempFiles):
+class TestApplyPatch(TestWithTempFiles):
     """
-    Tests for `replace_in_string`.
+    TODO
     """
-    _EXAMPLE_DOCKERFILE: str
-
-    @classmethod
-    def setUpClass(cls):
-        TestReplaceInString._EXAMPLE_DOCKERFILE = open(_EXAMPLE_DOCKERFILE_LOCATION, "r").read()
-
-    def test_replace_no_pattern_replacements(self):
-        self.assertEquals(TestReplaceInString._EXAMPLE_DOCKERFILE,
-                          replace_in_string([], TestReplaceInString._EXAMPLE_DOCKERFILE))
-
-    def test_replace_with_no_matching_patterns(self):
-        pattern = "not_matched"
-        self.assertEquals(
-            TestReplaceInString._EXAMPLE_DOCKERFILE, replace_in_string([(pattern, _EXAMPLE_STRING)], TestReplaceInString._EXAMPLE_DOCKERFILE))
-
-    def test_replace_part_of_line(self):
-        pattern = "FROM"
-        expected = TestReplaceInString._EXAMPLE_DOCKERFILE.replace(pattern, _EXAMPLE_STRING)
-        self.assertEquals(
-            expected, replace_in_string([(pattern, _EXAMPLE_STRING)], TestReplaceInString._EXAMPLE_DOCKERFILE))
-
-    def test_replace_whole_line(self):
-        pattern = "FROM.*"
-        expected = "\n%s" % "\n".join(TestReplaceInString._EXAMPLE_DOCKERFILE.split("\n")[1:])
-        self.assertEquals(expected, replace_in_string([(pattern, "")], TestReplaceInString._EXAMPLE_DOCKERFILE))
-
-    def test_replace_over_multiple_lines(self):
-        pattern = "RUN(.|\n|\r)*setup-2.sh"
-        expected = re.sub(pattern, _EXAMPLE_STRING, TestReplaceInString._EXAMPLE_DOCKERFILE)
-        assert "setup-1.sh" not in expected and "setup-2.sh" not in expected
-        self.assertEquals(
-            expected, replace_in_string([(pattern, _EXAMPLE_STRING)], TestReplaceInString._EXAMPLE_DOCKERFILE))
-
-    def test_replace_only_matches_first(self):
-        pattern = ".*\./setup.*"
-        expected = TestReplaceInString._EXAMPLE_DOCKERFILE.replace("RUN ./setup-1.sh \\", _EXAMPLE_STRING, 1)
-        self.assertEquals(
-            expected, replace_in_string([(pattern, _EXAMPLE_STRING)], TestReplaceInString._EXAMPLE_DOCKERFILE))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    _DOCKERFILE_NAME = "Dockerfile.example"
+    _EXAMPLE_DOCKERFILE_LOCATION = os.path.join(_RESOURCES_LOCATION, _DOCKERFILE_NAME)
+
+    def setUp(self):
+        super().setUp()
+        temp_directory = self.create_temp_directory()
+        self._dockerfile_location = os.path.join(temp_directory, TestApplyPatch._DOCKERFILE_NAME)
+        shutil.copyfile(TestApplyPatch._EXAMPLE_DOCKERFILE_LOCATION, self._dockerfile_location)
+
+    def test_change_from(self):
+        patched_content = self._apply(f"{_RESOURCES_LOCATION}/patches/from-change.patch")
+        self.assertTrue(patched_content.startswith("FROM arm32v7/ubuntu:16.04"))
+
+    def test_add_and_remove(self):
+        patched_content = self._apply(f"{_RESOURCES_LOCATION}/patches/add-and-remove.patch")
+        self.assertTrue("RUN /other.sh" in patched_content)
+        self.assertTrue("COPY . /data" not in patched_content)
+
+    def _apply(self, patch_location: str) -> str:
+        """
+        TODO
+        :param patch_location:
+        :return:
+        """
+        apply_patch(patch_location, self._dockerfile_location)
+        with open(self._dockerfile_location, "r") as file:
+            return file.read()
 
 
 if __name__ == "__main__":

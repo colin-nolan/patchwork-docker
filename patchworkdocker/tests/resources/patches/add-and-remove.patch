@@ -1,0 +1,14 @@
+--- Dockerfile.example	2018-10-14 17:27:56.000000000 +0100
++++ Dockerfile.example	2018-10-14 17:43:26.000000000 +0100
+@@ -1,9 +1,10 @@
+ FROM ubuntu:16.04
+
+-COPY . /data
++
+ WORKDIR /data
+ RUN ./setup-1.sh \
+     && ./setup-2.sh
++RUN /other.sh
+
+ ENTRYPOINT ["./entrypoint.sh"]
+ CMD ["--help"]

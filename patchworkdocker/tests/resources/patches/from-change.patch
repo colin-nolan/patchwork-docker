@@ -1,0 +1,8 @@
+--- Dockerfile.example	2018-10-14 16:56:15.000000000 +0100
++++ Dockerfile.example	2018-10-14 17:05:08.000000000 +0100
+@@ -1,4 +1,4 @@
+-FROM ubuntu:16.04
++FROM arm32v7/ubuntu:16.04
+ 
+ COPY . /data
+ WORKDIR /data

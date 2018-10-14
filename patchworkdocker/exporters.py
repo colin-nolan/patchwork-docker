@@ -1,15 +1,24 @@
 import shutil
-
-from typing import Callable
-
-Exporter = Callable[[str, str], None]
+from abc import ABCMeta, abstractmethod
 
 
-def export_as_directory(src: str, dest: str):
+class Exporter(metaclass=ABCMeta):
     """
     TODO
-    :param src: 
-    :param dest: 
-    :return: 
     """
-    shutil.copytree(src, dest)
+    @abstractmethod
+    def export(self, src: str, dest: str):
+        """
+        TODO
+        :param src:
+        :param dest:
+        :return:
+        """
+
+
+class DirectoryExporter(Exporter):
+    """
+    TODO
+    """
+    def export(self, src: str, dest: str):
+        shutil.copytree(src, dest)

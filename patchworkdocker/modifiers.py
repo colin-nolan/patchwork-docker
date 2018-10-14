@@ -1,9 +1,13 @@
+import itertools
 import os
 import shutil
 from distutils import dir_util
 
 import re
-from typing import Iterable, List, Tuple, Pattern, Set, Dict
+from tempfile import TemporaryDirectory
+from typing import Iterable, Dict
+
+from patch import fromfile, PatchSet
 
 _compiled_patterns: Dict[str, type(re.compile(""))] = {}
 
@@ -26,46 +30,23 @@ def copy_additional_files(files: Iterable[str], destination: str):
             dir_util.copy_tree(file, destination)
 
 
-def replace_in_string(pattern_replacements: Iterable[Tuple[str, str]], string: str) -> str:
+def apply_patch(patch_file: str, target_file: str):
     """
-    TODO
-    :param patterns: 
-    :param string: 
-    :return: 
+    TOOD
+
+    diff -uNr src_1 src_2
+
+    :param patch_file:
+    :param target_file:
+    :return:
     """
-    global _compiled_patterns
+    patch_set = fromfile(patch_file)
+    if not patch_set:
+        raise SyntaxError("Could not parse contents of patch file")
 
-    for pattern, replacement in pattern_replacements:
-        if pattern not in _compiled_patterns:
-            _compiled_patterns[pattern] = re.compile(pattern)
+    hunks = list(itertools.chain(*[item.hunks for item in patch_set.items]))
 
-        string =_compiled_patterns[pattern].sub(replacement, string)
-
-    return string
-
-    # non_empty_pattern = False
-    # for pattern in patterns:
-    #     if pattern != "":
-    #         non_empty_pattern = True
-    #         break
-    # if not non_empty_pattern:
-    #     return string
-
-    all_patterns = "|".join([f"({pattern})" for pattern in patterns])
-
-    return re.sub(all_patterns, "", string)
-
-
-# def remove_in_file(patterns: Iterable[str], dockerfile_location: str):
-#     """
-#     TODO
-#     :param patterns:
-#     :param dockerfile_location:
-#     """
-#     with open(dockerfile_location, "rw") as file:
-#         content = remove_in_string(patterns, file.read())
-#         file.write(content)
-
-
-# def add_lines_after()
-
+    with TemporaryDirectory() as temp_directory:
+        temp_file = os.path.join(temp_directory, os.path.basename(target_file))
+        patch_set.write_hunks(target_file, os.path.join(temp_file), hunks)
+        os.rename(temp_file, target_file)

@@ -1,6 +1,5 @@
 from abc import ABCMeta, abstractmethod
 from distutils import dir_util
-from pathlib import Path
 from tempfile import mkdtemp
 from urllib.parse import urldefrag
 
@@ -12,7 +11,7 @@ class Importer(metaclass=ABCMeta):
     Imports a Docker build directory.
     """
     @abstractmethod
-    def load(self, origin: str) -> Path:
+    def load(self, origin: str) -> str:
         """
         Loads build directory from the given origin into a temporary directory. 
         
@@ -57,3 +56,11 @@ class FileSystemImporter(Importer):
         temp_directory = mkdtemp()
         dir_util.copy_tree(origin, temp_directory)
         return temp_directory
+
+
+class UrlImporter(Importer):
+    """
+    TODO
+    """
+    def load(self, origin: str) -> str:
+        pass

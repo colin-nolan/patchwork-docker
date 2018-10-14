@@ -1,1 +1,2 @@
 GitPython
+patch==1.*
