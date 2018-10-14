@@ -2,43 +2,35 @@ import itertools
 import os
 import shutil
 from distutils import dir_util
-
-import re
 from tempfile import TemporaryDirectory
-from typing import Iterable, Dict
 
-from patch import fromfile, PatchSet
-
-_compiled_patterns: Dict[str, type(re.compile(""))] = {}
+from patch import fromfile
 
 
-def copy_additional_files(files: Iterable[str], destination: str):
+def copy_file(file: str, destination: str):
     """
-    TODO
-    
-    Will copy directories.
-    
-    If files with the same name are given, the last in the list will overwrite all of the others.
-    :param files: the files (and directories) to copy
-    :param destination: 
-    :return: 
+    Copy the given file (which could be a directory) to the given destination.
+    :param file: the file (which could be a directory) to copy
+    :param destination: where to copy the file to
     """
-    for file in files:
-        if os.path.isfile(file):
-            shutil.copy(file, destination)
-        else:
-            dir_util.copy_tree(file, destination)
+    if not os.path.exists(file):
+        raise FileExistsError(f"Cannot copy file {file} as it does not exist")
+    if os.path.isfile(file):
+        shutil.copy(file, destination)
+    else:
+        dir_util.copy_tree(file, destination)
 
 
 def apply_patch(patch_file: str, target_file: str):
     """
-    TOOD
+    Applies the given patch file (plain, git, mercurial or svn styles accepted) to the given target file.
 
+    To create a compatible patch between two files, you could use:
+    ```
     diff -uNr src_1 src_2
-
-    :param patch_file:
-    :param target_file:
-    :return:
+    ```
+    :param patch_file: the patch to apply
+    :param target_file: the patch target
     """
     patch_set = fromfile(patch_file)
     if not patch_set:

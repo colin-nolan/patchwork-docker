@@ -3,7 +3,7 @@ import shutil
 import unittest
 from pathlib import Path
 
-from patchworkdocker.modifiers import copy_additional_files, apply_patch
+from patchworkdocker.modifiers import copy_file, apply_patch
 from patchworkdocker.tests._common import TestWithTempFiles
 
 _RESOURCES_LOCATION = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources")
@@ -12,9 +12,9 @@ _EXAMPLE_FILE_NAME = "test-file"
 _EXAMPLE_FILE_NAME_2 = "test-file-2"
 
 
-class TestCopyAdditionalFiles(TestWithTempFiles):
+class TestCopyFile(TestWithTempFiles):
     """
-    Tests for `copy_additional_files`.
+    Tests for `copy_file`.
     """
     def setUp(self):
         super().setUp()
@@ -22,66 +22,49 @@ class TestCopyAdditionalFiles(TestWithTempFiles):
         self.dest_directory = self.create_temp_directory()
 
     def test_empty_src_to_empty_dest(self):
-        copy_additional_files([self.src_directory], self.dest_directory)
+        copy_file(self.src_directory, self.dest_directory)
         self.assertEquals(0, len(os.listdir(self.dest_directory)))
 
-    def test_single_src_to_empty_dest(self):
+    def test_src_to_empty_dest(self):
         Path(os.path.join(self.src_directory, _EXAMPLE_FILE_NAME)).touch()
-        copy_additional_files([self.src_directory], self.dest_directory)
+        copy_file(self.src_directory, self.dest_directory)
         self.assertTrue(os.path.exists(os.path.join(self.dest_directory, _EXAMPLE_FILE_NAME)))
         self.assertEquals(1, len(os.listdir(self.dest_directory)))
 
-    def test_single_src_to_dest(self):
+    def test_src_to_dest(self):
         Path(os.path.join(self.dest_directory, _EXAMPLE_FILE_NAME_2)).touch()
         Path(os.path.join(self.src_directory, _EXAMPLE_FILE_NAME)).touch()
-        copy_additional_files([self.src_directory], self.dest_directory)
+        copy_file(self.src_directory, self.dest_directory)
         self.assertTrue(os.path.exists(os.path.join(self.dest_directory, _EXAMPLE_FILE_NAME)))
         self.assertEquals(2, len(os.listdir(self.dest_directory)))
 
-    def test_single_src_to_dest_with_directory_merge(self):
+    def test_src_to_dest_with_directory_merge(self):
         Path(os.path.join(self.dest_directory, _EXAMPLE_FILE_NAME_2)).touch()
         Path(os.path.join(self.src_directory, _EXAMPLE_FILE_NAME)).touch()
-        copy_additional_files([self.src_directory], self.dest_directory)
+        copy_file(self.src_directory, self.dest_directory)
         self.assertTrue(os.path.exists(os.path.join(self.dest_directory, _EXAMPLE_FILE_NAME)))
         self.assertEquals(2, len(os.listdir(self.dest_directory)))
 
-    def test_single_src_file_to_empty_dest(self):
+    def test_src_file_to_empty_dest(self):
         file_location = os.path.join(self.src_directory, _EXAMPLE_FILE_NAME)
         Path(file_location).touch()
-        copy_additional_files([file_location], self.dest_directory)
+        copy_file(file_location, self.dest_directory)
         self.assertTrue(os.path.exists(os.path.join(self.dest_directory, _EXAMPLE_FILE_NAME)))
         self.assertEquals(1, len(os.listdir(self.dest_directory)))
 
-    def test_single_src_file_to_dest_with_overwrite(self):
+    def test_src_file_to_dest_with_overwrite(self):
         file_location = os.path.join(self.src_directory, _EXAMPLE_FILE_NAME)
         print("1", file=open(os.path.join(self.dest_directory, _EXAMPLE_FILE_NAME), "w"), end="")
         print("1", file=open(os.path.join(self.dest_directory, _EXAMPLE_FILE_NAME_2), "w"), end="")
         print("2", file=open(file_location, "w"), end="")
-        copy_additional_files([file_location], self.dest_directory)
+        copy_file(file_location, self.dest_directory)
         self.assertEquals("2", open(os.path.join(self.dest_directory, _EXAMPLE_FILE_NAME), "r").read())
         self.assertEquals(2, len(os.listdir(self.dest_directory)))
-
-    def test_multiple_src_to_empty_dest(self):
-        other_source_directory = self.create_temp_directory()
-        Path(os.path.join(self.src_directory, _EXAMPLE_FILE_NAME)).touch()
-        Path(os.path.join(other_source_directory, _EXAMPLE_FILE_NAME_2)).touch()
-        copy_additional_files([self.src_directory, other_source_directory], self.dest_directory)
-        self.assertTrue(os.path.exists(os.path.join(self.dest_directory, _EXAMPLE_FILE_NAME)))
-        self.assertTrue(os.path.exists(os.path.join(self.dest_directory, _EXAMPLE_FILE_NAME_2)))
-        self.assertEquals(2, len(os.listdir(self.dest_directory)))
-
-    def test_multiple_src_with_same_name_to_empty_dest(self):
-        other_source_directory = self.create_temp_directory()
-        print("1", file=open(os.path.join(self.src_directory, _EXAMPLE_FILE_NAME), "w"), end="")
-        print("2", file=open(os.path.join(other_source_directory, _EXAMPLE_FILE_NAME), "w"), end="")
-        copy_additional_files([self.src_directory, other_source_directory], self.dest_directory)
-        self.assertEquals("2", open(os.path.join(self.dest_directory, _EXAMPLE_FILE_NAME), "r").read())
-        self.assertEquals(1, len(os.listdir(self.dest_directory)))
 
 
 class TestApplyPatch(TestWithTempFiles):
     """
-    TODO
+    Tests for `apply_patch`.
     """
     _DOCKERFILE_NAME = "Dockerfile.example"
     _EXAMPLE_DOCKERFILE_LOCATION = os.path.join(_RESOURCES_LOCATION, _DOCKERFILE_NAME)
@@ -103,9 +86,9 @@ class TestApplyPatch(TestWithTempFiles):
 
     def _apply(self, patch_location: str) -> str:
         """
-        TODO
-        :param patch_location:
-        :return:
+        Applies the given patch to the example Docker file.
+        :param patch_location: the location of the patch to apply
+        :return: the contents of the example Docker file after the patch has been applied
         """
         apply_patch(patch_location, self._dockerfile_location)
         with open(self._dockerfile_location, "r") as file:

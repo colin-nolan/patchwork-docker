@@ -1,2 +1,6 @@
 GitPython
 patch==1.*
+fire
+logzero
+frozendict
+

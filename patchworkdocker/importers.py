@@ -1,7 +1,8 @@
+import os
 from abc import ABCMeta, abstractmethod
 from distutils import dir_util
 from tempfile import mkdtemp
-from urllib.parse import urldefrag
+from urllib.parse import urldefrag, urlparse
 
 from git import Repo
 
@@ -58,9 +59,17 @@ class FileSystemImporter(Importer):
         return temp_directory
 
 
-class UrlImporter(Importer):
+class ImporterFactory:
     """
-    TODO
+    Importer factory, which can create the correct importer for an origin.
     """
-    def load(self, origin: str) -> str:
-        pass
+    def create(self, origin: str) -> Importer:
+        if os.path.exists(origin):
+            return FileSystemImporter()
+
+        parsed_origin = urlparse(origin)
+        if parsed_origin.scheme == "git" or parsed_origin.path.endswith(".git"):
+            # XXX: it is possible that there's a Git repo at a location that does not have these attributes...
+            return GitImporter()
+
+        raise NotImplementedError(f"No importer implemented to work with: {origin}")
