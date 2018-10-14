@@ -66,8 +66,8 @@ class TestApplyPatch(TestWithTempFiles):
     """
     Tests for `apply_patch`.
     """
-    _DOCKERFILE_NAME = "Dockerfile.example"
-    _EXAMPLE_DOCKERFILE_LOCATION = os.path.join(_RESOURCES_LOCATION, _DOCKERFILE_NAME)
+    _DOCKERFILE_NAME = "Dockerfile"
+    _EXAMPLE_DOCKERFILE_LOCATION = os.path.join(_RESOURCES_LOCATION, "patching", _DOCKERFILE_NAME)
 
     def setUp(self):
         super().setUp()
@@ -76,11 +76,11 @@ class TestApplyPatch(TestWithTempFiles):
         shutil.copyfile(TestApplyPatch._EXAMPLE_DOCKERFILE_LOCATION, self._dockerfile_location)
 
     def test_change_from(self):
-        patched_content = self._apply(f"{_RESOURCES_LOCATION}/patches/from-change.patch")
+        patched_content = self._apply(f"{_RESOURCES_LOCATION}/patching/from-change.patch")
         self.assertTrue(patched_content.startswith("FROM arm32v7/ubuntu:16.04"))
 
     def test_add_and_remove(self):
-        patched_content = self._apply(f"{_RESOURCES_LOCATION}/patches/add-and-remove.patch")
+        patched_content = self._apply(f"{_RESOURCES_LOCATION}/patching/add-and-remove.patch")
         self.assertTrue("RUN /other.sh" in patched_content)
         self.assertTrue("COPY . /data" not in patched_content)
 

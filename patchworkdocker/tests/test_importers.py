@@ -2,7 +2,6 @@ import os
 import unittest
 from abc import abstractmethod
 from pathlib import Path
-
 from typing import TypeVar, Generic, Optional
 
 from patchworkdocker.importers import GitImporter, Importer, FileSystemImporter

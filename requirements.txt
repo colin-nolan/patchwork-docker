@@ -3,4 +3,4 @@ patch==1.*
 fire
 logzero
 frozendict
-
+thriftybuilder>=1.0.3
