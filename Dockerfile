@@ -1,4 +1,4 @@
-ARG baseImage=python:3.6
+ARG baseImage=python:3.7
 FROM ${baseImage}
 
 ARG dockerVersion=18.06.1-ce

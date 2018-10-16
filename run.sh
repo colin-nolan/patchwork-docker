@@ -7,4 +7,4 @@ cd "${scriptDirectory}"
 
 docker build -t patchworkdocker .
 
-
+docker run --rm -it patchworkdocker inputfiles "$@"

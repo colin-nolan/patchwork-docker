@@ -1,78 +1,96 @@
-import logging
 import os
 import shutil
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional
 
-import fire
 from frozendict import frozendict
-from logzero import setup_logger
+from logzero import logger
 
 from patchworkdocker.docker_images import build_docker_image
 from patchworkdocker.importers import ImporterFactory
 from patchworkdocker.modifiers import copy_file, apply_patch
 
-logger = setup_logger()
 _importer_factory = ImporterFactory()
 
-logger.setLevel(logging.DEBUG)
 
-
-def _process_source_and_destination(src: str, dest: Optional[str], repository_location: str) -> Tuple[str, str]:
+class Core:
     """
     TODO
-    :param src:
-    :param dest:
-    :param repository_location:
-    :return:
     """
-    src = os.path.abspath(src)
-    if not os.path.exists(src):
-        raise ValueError(f"Source path does not exist: {src}")
+    def __init__(self, import_repository_from: str, *, additional_files: Dict[str, Optional[str]]=(),
+                 patches: Dict[str, str]=frozendict(), dockerfile_location: str="Dockerfile"):
+        """
+        TODO
+        :param import_repository_from:
+        :param additional_files: (added in the order given, overwrites possible)
+        :param patches: (applied in the order given)
+        :param dockerfile_location: location of the Dockerfile to build, relative to the root of the repository
+        """
+        self.import_repository_from = import_repository_from
+        self.additional_files = additional_files
+        self.patches = patches
+        self.dockerfile_location = dockerfile_location
 
-    assert os.path.isabs(repository_location)
-    if dest is None:
-        # FIXME: Does not apply to patches!
-        dest = os.path.basename(src)
-    if os.path.isabs(dest):
-        raise ValueError(f"Destinations should be relative: {dest}")
-    dest = os.path.join(repository_location, dest)
+    def build(self, image_name: str, build_directory: str=None):
+        """
+        TODO
+        :param image_name: image tag (can optionally include a version tag)
+        :param build_directory: TODO
+        :return:
+        """
+        repository_location = self.prepare(build_directory)
+        try:
+            build_docker_image(image_name, repository_location, self.dockerfile_location)
+        except Exception:
+            if build_directory is None:
+                logger.info("Removing temp build directory")
+                shutil.rmtree(repository_location)
+            else:
+                logger.info("Not removing build directory as directory was given by the user")
+            raise
 
-    return src, dest
+    def prepare(self, build_directory: str=None) -> str:
+        """
+        TODO
+        """
+        repository_location = _importer_factory.create(self.import_repository_from).load(
+            self.import_repository_from, build_directory)
+        assert os.path.isabs(repository_location)
+        logger.info(f"Imported repository at {self.import_repository_from} to {repository_location}")
+
+        for src, dest in self.additional_files.items():
+            src = os.path.abspath(src)
+            if dest is None:
+                dest = os.path.basename(src)
+            if os.path.isabs(dest):
+                raise ValueError(f"Destination must be relative to the root of the context: {dest}")
+            dest = os.path.join(repository_location, dest)
+            os.path.exists(src), os.path.exists(dest)
+            logger.info(f"{'Overwriting' if os.path.exists(dest) else 'Creating'} {dest} with {src}")
+            copy_file(src, dest)
+
+        for src, dest in self.patches.items():
+            src = os.path.abspath(src)
+            dest = os.path.join(repository_location, dest)
+            os.path.exists(src), os.path.exists(dest)
+            logger.info(f"Patching {dest} with {src}")
+            apply_patch(src, dest)
+
+        return repository_location
 
 
-def run(image_name: str, import_repository_from: str, *, additional_files: Dict[str, Optional[str]]=(),
-        patches: Dict[str, str]=frozendict(), dockerfile_location: str="Dockerfile"):
+def get_input_files(additional_files: Dict[str, Optional[str]], patches: Dict[str, str],
+                    dockerfile_location: str, build_location: str) -> Dict:
     """
     TODO
-    :param image_name: image tag (can optionally include a version tag)
-    :param import_repository_from:
-    :param additional_files: (added in the order given, overwrites possible)
-    :param patches: (applied in the order given)
-    :param dockerfile_location: location of the Dockerfile to build, relative to the root of the repository
+    :param additional_files:
+    :param patches:
+    :param dockerfile_location:
     :return:
     """
-    if os.path.isabs(dockerfile_location):
-        raise ValueError("Dockerfile location must be relative to the root of the repository")
-
-    repository_location = _importer_factory.create(import_repository_from).load(import_repository_from)
-    logger.info(f"Imported repository at {import_repository_from} to {repository_location}")
-
-    for src, dest in (_process_source_and_destination(src, dest, repository_location)
-                      for src, dest in additional_files.items()):
-        logger.info(f"{'Overwriting' if os.path.exists(dest) else 'Creating'} {dest} with {src}")
-        copy_file(src, dest)
-
-    for src, dest in (_process_source_and_destination(src, dest, repository_location)
-                      for src, dest in patches.items()):
-        logger.info(f"Patching {dest} with {src}")
-        apply_patch(src, dest)
-
-    build_docker_image(image_name, repository_location, dockerfile_location)
-
-    shutil.rmtree(repository_location)
-
-
-
-
-if __name__ == "__main__":
-    fire.Fire(run)
+    return {
+        # TODO: Remove magic strings
+        "additional-files": list({os.path.abspath(src) for src in additional_files.keys()}),
+        "patches": list({os.path.abspath(src) for src in patches.keys()}),
+        "dockerfile": dockerfile_location,
+        "build-location": build_location
+    }

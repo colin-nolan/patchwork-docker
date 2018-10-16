@@ -12,13 +12,27 @@ class Importer(metaclass=ABCMeta):
     Imports a Docker build directory.
     """
     @abstractmethod
-    def load(self, origin: str) -> str:
+    def _load(self, origin: str, load_directory: str) -> str:
         """
-        Loads build directory from the given origin into a temporary directory. 
-        
-        The returned directory is not cleaned up automatically.
+        Loads the build directory from the given origin into the given directory.
+        :param origin:
+        :param load_directory:
         :return: directory containing the loaded content
         """
+
+    def load(self, origin: str, load_directory: str=None) -> str:
+        """
+        Loads build directory from the given origin into a load directory, which can be specified or is a generated
+        temp directory if `None`.
+
+        The returned directory is not cleaned up automatically.
+        :param origin:
+        :param load_directory:
+        :return: directory containing the loaded content
+        """
+        if load_directory is None:
+            load_directory = mkdtemp()
+        return self._load(origin, load_directory)
 
 
 class GitImporter(Importer):
@@ -27,10 +41,9 @@ class GitImporter(Importer):
     
     For a specific commit, branch or tag, set the fragment, e.g. http://example.com/repo.git#branch_tag_or_commit.
     """
-    def load(self, origin: str) -> str:
+    def _load(self, origin: str, load_directory: str) -> str:
         origin, branch = urldefrag(origin)
-        temp_directory = mkdtemp()
-        repository = Repo.clone_from(url=origin, to_path=temp_directory)
+        repository = Repo.clone_from(url=origin, to_path=load_directory)
 
         if branch != "":
             if branch not in repository.heads:
@@ -46,17 +59,16 @@ class GitImporter(Importer):
                 repository.create_head(path=branch, commit=commit)
             repository.heads[branch].checkout()
 
-        return temp_directory
+        return load_directory
 
 
 class FileSystemImporter(Importer):
     """
-    Imports content from somewhere on the local file system.
+    Imports content from the local file system.
     """
-    def load(self, origin: str) -> str:
-        temp_directory = mkdtemp()
-        dir_util.copy_tree(origin, temp_directory)
-        return temp_directory
+    def _load(self, origin: str, load_directory: str) -> str:
+        dir_util.copy_tree(origin, load_directory)
+        return load_directory
 
 
 class ImporterFactory:
@@ -64,6 +76,11 @@ class ImporterFactory:
     Importer factory, which can create the correct importer for an origin.
     """
     def create(self, origin: str) -> Importer:
+        """
+        TODO
+        :param origin:
+        :return:
+        """
         if os.path.exists(origin):
             return FileSystemImporter()
 
