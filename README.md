@@ -1,8 +1,7 @@
 # Patchwork Docker
 
 ## Purpose
-To allow an existing Docker build to be easily changed, without having to go through the motions of cloning and 
-modifying and an existing build repository. 
+Allows an existing Docker build to be easily changed, without having to clone and modify an existing build repository. 
 
 
 ## Features
@@ -14,22 +13,22 @@ All with a single command, the tool can:
 
 
 ## Use Cases
-A few basic use cases:
+A few basic use cases (`./docker-run.sh` can be used instead of `patchworkdocker`):
 - To change a base image from `debian:stretch` to `python:3.7-stretch` so as to get the latest version of Python in the 
   image with no hassle:
   ```bash
-  ./docker-run.sh build example:1.0.0 https://github.com/example/docker-example.git \
+  patchworkdocker build example:1.0.0 https://github.com/example/docker-example.git \
       --base-image python:3.7-stretch
   ```
 - Add an alternate Dockerfile to a pre-existing context:
   ```bash
-  ./docker-run.sh build example:1.0.0 https://github.com/example/docker-example.git \
+  patchworkdocker build example:1.0.0 https://github.com/example/docker-example.git \
       --additional-file Dockerfile:Dockerfile.example \
       --dockerfile Dockerfile.example
   ```
 - Change the URL of a piece of software that gets installed into a Docker image:
   ```bash
-  ./docker-run.sh build example:1.0.0 https://github.com/docker-library/python.git \
+  patchworkdocker build example:1.0.0 https://github.com/docker-library/python.git \
       --dockerfile 3.7/stretch/Dockerfile \
       --patch change-install-url.patch:Dockerfile
   ```
@@ -52,6 +51,6 @@ pip install git+https://github.com/wtsi-hgi/patchwork-docker@master#egg=patchwor
 ## Usage
 Up-to-date usage information can be seen with:
 ```bash
-./docker-run.sh --help
-./docker-run.sh build --help
+patchworkdocker --help
+patchworkdocker build --help
 ```
