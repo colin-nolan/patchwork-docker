@@ -20,7 +20,8 @@ ADD requirements.txt /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt
 
 ADD . ${INSTALL_DIRECTORY}
+WORKDIR /root
 
-ENTRYPOINT ["sh", "-c", "python ${INSTALL_DIRECTORY}/patchworkdocker/core.py"]
+ENTRYPOINT ["python", "/patchworkdocker/patchworkdocker/cli.py"]
 
-CMD ["--", "--help"]
+CMD ["--help"]

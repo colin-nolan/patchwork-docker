@@ -40,21 +40,26 @@ class Core:
         repository_location = self.prepare(build_directory)
         try:
             build_docker_image(image_name, repository_location, self.dockerfile_location)
-        except Exception:
+        finally:
             if build_directory is None:
-                logger.info("Removing temp build directory")
+                logger.info(f"Removing temp build directory: {repository_location}")
                 shutil.rmtree(repository_location)
             else:
-                logger.info("Not removing build directory as directory was given by the user")
-            raise
+                logger.info(f"Not removing build directory as directory was given by the user: {repository_location}")
 
     def prepare(self, build_directory: str=None) -> str:
         """
         TODO
+        :param build_directory:
+        :return:
         """
+        if build_directory is not None:
+            build_directory = os.path.abspath(build_directory)
+            if len(os.listdir(path=build_directory)) > 0:
+                raise ValueError(f"Build directory {build_directory} is not empty")
+
         repository_location = _importer_factory.create(self.import_repository_from).load(
             self.import_repository_from, build_directory)
-        assert os.path.isabs(repository_location)
         logger.info(f"Imported repository at {self.import_repository_from} to {repository_location}")
 
         for src, dest in self.additional_files.items():
@@ -76,21 +81,3 @@ class Core:
             apply_patch(src, dest)
 
         return repository_location
-
-
-def get_input_files(additional_files: Dict[str, Optional[str]], patches: Dict[str, str],
-                    dockerfile_location: str, build_location: str) -> Dict:
-    """
-    TODO
-    :param additional_files:
-    :param patches:
-    :param dockerfile_location:
-    :return:
-    """
-    return {
-        # TODO: Remove magic strings
-        "additional-files": list({os.path.abspath(src) for src in additional_files.keys()}),
-        "patches": list({os.path.abspath(src) for src in patches.keys()}),
-        "dockerfile": dockerfile_location,
-        "build-location": build_location
-    }

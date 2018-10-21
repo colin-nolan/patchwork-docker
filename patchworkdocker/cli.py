@@ -1,3 +1,4 @@
+import dataclasses
 import json
 import logging
 import sys
@@ -5,15 +6,15 @@ from argparse import ArgumentParser, Action
 from dataclasses import dataclass
 from enum import Enum, unique
 from json import JSONDecodeError
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 
 import logzero
 from logzero import logger
 
-from patchworkdocker.core import get_input_files, Core
-from patchworkdocker.meta import EXECUTABLE_NAME, DESCRIPTION, VERSION
 from patchworkdocker._external.verbosity_argument_parser import verbosity_parser_configuration, VERBOSE_PARAMETER_KEY, \
-    get_verbosity
+    get_verbosity, DEFAULT_LOG_VERBOSITY_KEY
+from patchworkdocker.core import Core
+from patchworkdocker.meta import EXECUTABLE_NAME, DESCRIPTION, VERSION
 
 ACTION_PARAMETER = "action"
 IMPORT_REPOSITORY_FROM_PARAMETER = "context"
@@ -26,11 +27,13 @@ DOCKERFILE_LOCATION_SHORT_PARAMETER = "d"
 IMAGE_NAME_PARAMETER = "image-name"
 BUILD_LOCATION_LONG_PARAMETER = "build-location"
 BUILD_LOCATION_SHORT_PARAMETER = "b"
-VERBOSITY_PARAMETER = verbosity_parser_configuration[VERBOSE_PARAMETER_KEY]
+VERBOSITY_SHORT_PARAMETER = verbosity_parser_configuration[VERBOSE_PARAMETER_KEY]
+DRY_RUN_LONG_PARAMETER = "dry-run"
 
 DEFAULT_ADDITIONAL_FILES = {}
 DEFAULT_PATCHES = {}
 DEFAULT_DOCKERFILE_LOCATION = "Dockerfile"
+DEFAULT_VERBOSITY = verbosity_parser_configuration[DEFAULT_LOG_VERBOSITY_KEY]
 
 
 @unique
@@ -38,7 +41,6 @@ class ActionValue(Enum):
     """
     TODO
     """
-    INPUT_FILES = "inputfiles"
     BUILD = "build"
     PREPARE = "prepare"
 
@@ -49,6 +51,7 @@ class BaseCliConfiguration:
     Base CLI configuration.
     """
     log_verbosity: int
+    dry_run: bool
 
 
 @dataclass
@@ -60,32 +63,18 @@ class SubcommandCliConfiguration(BaseCliConfiguration):
     patches: Dict[str, str]
     dockerfile_location: str
     build_location: Optional[str]
-
-
-@dataclass
-class ContextUsingCliConfiguration:
-    """
-    TODO
-    """
     import_from: str
 
 
 @dataclass
-class InputFilesCliConfiguration(SubcommandCliConfiguration):
+class PrepareCliConfiguration(SubcommandCliConfiguration):
     """
     TODO
     """
 
 
 @dataclass
-class PrepareCliConfiguration(SubcommandCliConfiguration, ContextUsingCliConfiguration):
-    """
-    TODO
-    """
-
-
-@dataclass
-class BuildCliConfiguration(SubcommandCliConfiguration, ContextUsingCliConfiguration):
+class BuildCliConfiguration(SubcommandCliConfiguration):
     """
     TODO
     """
@@ -104,7 +93,7 @@ class _StringDictParseAction(Action):
             getattr(namespace, self.dest, {}).update(value_as_json)
         except JSONDecodeError:
             if ":" not in values:
-                raise ValueError(f"Unable to parse: {values}")
+                raise ValueError(f"Unable to parse: {values}. Must be in form \"xxx:yyy\"")
             key, value = values.split(":")
             getattr(namespace, self.dest, {})[key] = value
 
@@ -115,13 +104,13 @@ def _create_parser() -> ArgumentParser:
     :return:
     """
     parser = ArgumentParser(prog=EXECUTABLE_NAME, description=f"{DESCRIPTION} (v{VERSION})")
-    parser.add_argument(f"-{VERBOSITY_PARAMETER}", action="count", default=0,
+    parser.add_argument(f"-{VERBOSITY_SHORT_PARAMETER}", action="count", default=0,
                         help="increase the level of log verbosity (add multiple increase further)")
+    parser.add_argument(f"--{DRY_RUN_LONG_PARAMETER}", action="store_true", default=False, help="")
     subparsers = parser.add_subparsers(dest=ACTION_PARAMETER, help="TODO")
 
     def take_context_arguments(parser: ArgumentParser):
-        parser.add_argument(IMPORT_REPOSITORY_FROM_PARAMETER,
-                            help="TODO")
+        parser.add_argument(IMPORT_REPOSITORY_FROM_PARAMETER, help="TODO")
 
     def take_common_arguments(parser: ArgumentParser):
         parser.add_argument(f"-{ADDITIONAL_FILES_SHORT_PARAMETER}", f"--{ADDITIONAL_FILES_LONG_PARAMETER}",
@@ -132,9 +121,6 @@ def _create_parser() -> ArgumentParser:
                             help="TODO", default=DEFAULT_DOCKERFILE_LOCATION)
         parser.add_argument(f"-{BUILD_LOCATION_SHORT_PARAMETER}", f"--{BUILD_LOCATION_LONG_PARAMETER}",
                             help="TODO", default=None)
-
-    input_files_parser = subparsers.add_parser(ActionValue.INPUT_FILES.value, help="TODO")
-    take_common_arguments(input_files_parser)
 
     build_parser = subparsers.add_parser(ActionValue.BUILD.value, help="TODO")
     build_parser.add_argument(IMAGE_NAME_PARAMETER, help="TODO")
@@ -148,34 +134,34 @@ def _create_parser() -> ArgumentParser:
     return parser
 
 
-def parse_cli_configuration(arguments: List[str]) -> None:
+def parse_cli_configuration(arguments: List[str]) -> BaseCliConfiguration:
     """
     Parses the given CLI arguments.
     :param arguments: the arguments from the CLI
     :return: parsed configuration
     """
-    parsed_arguments = {x.replace("_", "-"): y for x, y in vars(_create_parser().parse_args(arguments)).items()}
+    parsed_arguments = _create_parser().parse_args(arguments)
+    parsed_arguments = {x.replace("_", "-"): y for x, y in vars(parsed_arguments).items()}
     # XXX: Setting a value other than the display string seems to be non-trivial: https://bugs.python.org/issue23487
     parsed_arguments[ACTION_PARAMETER] = ActionValue(parsed_arguments[ACTION_PARAMETER])
 
     cli_configuration_class = {
-        ActionValue.INPUT_FILES: InputFilesCliConfiguration,
         ActionValue.BUILD: BuildCliConfiguration,
         ActionValue.PREPARE: PrepareCliConfiguration
     }[parsed_arguments[ACTION_PARAMETER]]
 
     extra_configuration = {}
-    if issubclass(cli_configuration_class, ContextUsingCliConfiguration):
-        extra_configuration["import_from"] = parsed_arguments[IMPORT_REPOSITORY_FROM_PARAMETER]
     if issubclass(cli_configuration_class, BuildCliConfiguration):
         extra_configuration["image_name"] = parsed_arguments[IMAGE_NAME_PARAMETER]
 
     cli_configuration = cli_configuration_class(
         log_verbosity=get_verbosity(parsed_arguments),
+        dry_run=parsed_arguments[DRY_RUN_LONG_PARAMETER],
         additional_files=parsed_arguments[ADDITIONAL_FILES_LONG_PARAMETER],
         patches=parsed_arguments[PATCHES_LONG_PARAMETER],
         dockerfile_location=parsed_arguments[DOCKERFILE_LOCATION_LONG_PARAMETER],
         build_location=parsed_arguments[BUILD_LOCATION_LONG_PARAMETER],
+        import_from=parsed_arguments[IMPORT_REPOSITORY_FROM_PARAMETER],
         **extra_configuration
     )
 
@@ -191,7 +177,37 @@ def _set_log_level(level: int):
     logzero.loglevel(level)
     if level == logging.WARNING:
         logger.warning("There are not likely to be many WARN level logs: consider increasing the verbosity by adding"
-                       f"more -{VERBOSITY_PARAMETER}")
+                       f"more -{VERBOSITY_SHORT_PARAMETER}")
+
+def print_configuration(configuration: BaseCliConfiguration):
+    """
+    TODO
+    :param configuration:
+    :return:
+    """
+    configuration_as_json = json.dumps(dataclasses.asdict(configuration))
+    print(configuration_as_json)
+
+
+def build(core: Core, configuration: BuildCliConfiguration):
+    """
+    TODO
+    :param core:
+    :param configuration:
+    :return:
+    """
+    core.build(configuration.image_name, configuration.build_location)
+
+
+def prepare(core: Core, configuration: BuildCliConfiguration):
+    """
+    TODO
+    :param core:
+    :param configuration:
+    :return:
+    """
+    output = core.prepare(configuration.build_location)
+    print(output)
 
 
 def main(cli_arguments: List[str]):
@@ -205,28 +221,29 @@ def main(cli_arguments: List[str]):
     if cli_configuration.log_verbosity:
         _set_log_level(cli_configuration.log_verbosity)
 
-    if type(cli_configuration) is InputFilesCliConfiguration:
-        input_files = get_input_files(cli_configuration.additional_files, cli_configuration.patches,
-                                      cli_configuration.dockerfile_location, cli_configuration.build_location)
-        print(json.dumps(input_files))
-    else:
-        core = Core(cli_configuration.import_from, additional_files=cli_configuration.additional_files,
-                    patches=cli_configuration.patches, dockerfile_location=cli_configuration.dockerfile_location)
+    if cli_configuration.dry_run:
+        print_configuration(cli_configuration)
+        exit(0)
 
-        if type(cli_configuration) is BuildCliConfiguration:
-            core.build(cli_configuration.image_name, cli_configuration.build_location)
+    # XXX: Ideally, we would use `configuration: Intersect[ContextUsingCliConfiguration, SubcommandCliConfiguration]
+    # but multiple bounds are sadly not supported in Python's type hinting: https://github.com/python/typing/issues/213
+    def create_core(configuration: Union[PrepareCliConfiguration, BuildCliConfiguration]) -> Core:
+        return Core(configuration.import_from, additional_files=configuration.additional_files,
+                    patches=configuration.patches, dockerfile_location=configuration.dockerfile_location)
 
-
+    {
+        BuildCliConfiguration: lambda: build(create_core(cli_configuration), cli_configuration),
+        PrepareCliConfiguration: lambda: build(create_core(cli_configuration), cli_configuration),
+    }[type(cli_configuration)]()
 
 
 def entrypoint():
     """
     Entry-point to be used by CLI.
     """
+    logger.setLevel(DEFAULT_VERBOSITY)
     main(sys.argv[1:])
 
 
 if __name__ == "__main__":
     entrypoint()
-
-
