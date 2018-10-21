@@ -1,0 +1,19 @@
+language: python
+
+python7
+  - 3.6
+
+services:
+  - docker
+
+before_install:
+  - pip install codecov coverage
+
+install:
+  - pip --disable-pip-version-check install -U -r requirements.txt
+
+script:
+  - ./run-tests.sh
+
+after_success:
+- codecov
