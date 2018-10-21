@@ -1,3 +1,4 @@
+import fileinput
 import itertools
 import os
 import shutil
@@ -42,3 +43,23 @@ def apply_patch(patch_file: str, target_file: str):
         temp_file = os.path.join(temp_directory, os.path.basename(target_file))
         patch_set.write_hunks(target_file, os.path.join(temp_file), hunks)
         os.rename(temp_file, target_file)
+
+
+def change_base_image(dockerfile_location: str, desired_base: str):
+    """
+    TODO
+    :param dockerfile_location:
+    :param desired_base:
+    :return:
+    """
+    changed = False
+    for line in fileinput.input(dockerfile_location, inplace=True):
+        if line.upper().startswith("FROM"):
+            assert not changed
+            print(f"FROM {desired_base}")
+            changed = True
+        else:
+            print(line, end="")
+
+    if not changed:
+        raise ValueError(f"Dockerfile did not contain FROM line: {dockerfile_location}")

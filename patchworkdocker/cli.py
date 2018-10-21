@@ -29,6 +29,8 @@ BUILD_LOCATION_LONG_PARAMETER = "build-location"
 BUILD_LOCATION_SHORT_PARAMETER = "b"
 VERBOSITY_SHORT_PARAMETER = verbosity_parser_configuration[VERBOSE_PARAMETER_KEY]
 DRY_RUN_LONG_PARAMETER = "dry-run"
+BASE_IMAGE_SHORT_PARAMETER = "i"
+BASE_IMAGE_LONG_PARAMETER = "base-image"
 
 DEFAULT_ADDITIONAL_FILES = {}
 DEFAULT_PATCHES = {}
@@ -64,6 +66,7 @@ class SubcommandCliConfiguration(BaseCliConfiguration):
     dockerfile_location: str
     build_location: Optional[str]
     import_from: str
+    base_image: str
 
 
 @dataclass
@@ -104,6 +107,8 @@ def _create_parser() -> ArgumentParser:
         parser.add_argument(f"-{DOCKERFILE_LOCATION_SHORT_PARAMETER}", f"--{DOCKERFILE_LOCATION_LONG_PARAMETER}",
                             help="TODO", default=DEFAULT_DOCKERFILE_LOCATION)
         parser.add_argument(f"-{BUILD_LOCATION_SHORT_PARAMETER}", f"--{BUILD_LOCATION_LONG_PARAMETER}",
+                            help="TODO", default=None)
+        parser.add_argument(f"-{BASE_IMAGE_SHORT_PARAMETER}", f"--{BASE_IMAGE_LONG_PARAMETER}",
                             help="TODO", default=None)
 
     build_parser = subparsers.add_parser(ActionValue.BUILD.value, help="TODO")
@@ -146,6 +151,7 @@ def parse_cli_configuration(arguments: List[str]) -> BaseCliConfiguration:
         dockerfile_location=parsed_arguments[DOCKERFILE_LOCATION_LONG_PARAMETER],
         build_location=parsed_arguments[BUILD_LOCATION_LONG_PARAMETER],
         import_from=parsed_arguments[IMPORT_REPOSITORY_FROM_PARAMETER],
+        base_image=parsed_arguments[BASE_IMAGE_LONG_PARAMETER],
         **extra_configuration
     )
 
@@ -212,7 +218,8 @@ def main(cli_arguments: List[str]):
     # but multiple bounds are sadly not supported in Python's type hinting: https://github.com/python/typing/issues/213
     def create_core(configuration: Union[PrepareCliConfiguration, BuildCliConfiguration]) -> PatchworkDocker:
         return PatchworkDocker(configuration.import_from, additional_files=configuration.additional_files,
-                               patches=configuration.patches, dockerfile_location=configuration.dockerfile_location)
+                               patches=configuration.patches, dockerfile_location=configuration.dockerfile_location,
+                               base_image=cli_configuration.base_image)
 
     {
         BuildCliConfiguration: lambda: build(create_core(cli_configuration), cli_configuration),
