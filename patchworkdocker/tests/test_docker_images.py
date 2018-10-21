@@ -22,7 +22,7 @@ class TestBuildDockerImage(TestWithTempFiles):
         self._docker_client.images.remove(self._docker_image)
 
     def test_build_docker_image(self):
-        build_docker_image(self._docker_image, _BUILDING_RESOURCES, "Dockerfile")
+        build_docker_image(self._docker_image, _BUILDING_RESOURCES, os.path.join(_BUILDING_RESOURCES, "Dockerfile"))
         contents = self._docker_client.containers.run(self._docker_image, "cat /test.txt", remove=True).decode("UTF8")
         self.assertEqual(contents, open(os.path.join(_BUILDING_RESOURCES, "hello-world.txt"), "r").read())
 
