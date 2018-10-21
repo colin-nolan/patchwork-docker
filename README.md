@@ -1,7 +1,7 @@
 # Patchwork Docker
 
 ## Purpose
-Allows an existing Docker build to be easily changed, without having to clone and modify an existing build repository. 
+Allows a Docker build to be easily changed, without having to clone and modify an existing build repository. 
 
 
 ## Features

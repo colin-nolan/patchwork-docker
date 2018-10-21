@@ -1,0 +1,7 @@
+FROM patchworkdocker
+
+RUN pip --disable-pip-version-check install -U coverage
+
+WORKDIR "${INSTALL_DIRECTORY}"
+
+CMD ["./run-tests.sh"]
