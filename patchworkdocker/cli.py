@@ -2,18 +2,18 @@ import dataclasses
 import json
 import logging
 import sys
-from argparse import ArgumentParser, Action
+from argparse import ArgumentParser
 from dataclasses import dataclass
 from enum import Enum, unique
-from json import JSONDecodeError
 from typing import List, Dict, Optional, Union
 
 import logzero
 from logzero import logger
 
+from patchworkdocker._external.key_value_string_parser import KeyValueStringParserAction
 from patchworkdocker._external.verbosity_argument_parser import verbosity_parser_configuration, VERBOSE_PARAMETER_KEY, \
     get_verbosity, DEFAULT_LOG_VERBOSITY_KEY
-from patchworkdocker.core import Core
+from patchworkdocker.core import PatchworkDocker
 from patchworkdocker.meta import EXECUTABLE_NAME, DESCRIPTION, VERSION
 
 ACTION_PARAMETER = "action"
@@ -39,7 +39,7 @@ DEFAULT_VERBOSITY = verbosity_parser_configuration[DEFAULT_LOG_VERBOSITY_KEY]
 @unique
 class ActionValue(Enum):
     """
-    TODO
+    Program action.
     """
     BUILD = "build"
     PREPARE = "prepare"
@@ -57,7 +57,7 @@ class BaseCliConfiguration:
 @dataclass
 class SubcommandCliConfiguration(BaseCliConfiguration):
     """
-    TODO
+    CLI configuration for subcommands.
     """
     additional_files: Dict[str, str]
     patches: Dict[str, str]
@@ -69,39 +69,22 @@ class SubcommandCliConfiguration(BaseCliConfiguration):
 @dataclass
 class PrepareCliConfiguration(SubcommandCliConfiguration):
     """
-    TODO
+    CLI configuration for preparing a patchwork Docker build.
     """
 
 
 @dataclass
 class BuildCliConfiguration(SubcommandCliConfiguration):
     """
-    TODO
+    CLI configuration for building a patchwork Docker image.
     """
     image_name: str
 
 
-class _StringDictParseAction(Action):
-    """
-    TODO
-    """
-    def __call__(self, parser, namespace, values, option_string=None):
-        try:
-            value_as_json = json.loads(values)
-            if type(value_as_json) is not dict:
-                raise ValueError(f"Not an acceptable JSON value: {values}")
-            getattr(namespace, self.dest, {}).update(value_as_json)
-        except JSONDecodeError:
-            if ":" not in values:
-                raise ValueError(f"Unable to parse: {values}. Must be in form \"xxx:yyy\"")
-            key, value = values.split(":")
-            getattr(namespace, self.dest, {})[key] = value
-
-
 def _create_parser() -> ArgumentParser:
     """
-    TODO
-    :return:
+    Creates an argument parser.
+    :return: the created parser
     """
     parser = ArgumentParser(prog=EXECUTABLE_NAME, description=f"{DESCRIPTION} (v{VERSION})")
     parser.add_argument(f"-{VERBOSITY_SHORT_PARAMETER}", action="count", default=0,
@@ -114,9 +97,10 @@ def _create_parser() -> ArgumentParser:
 
     def take_common_arguments(parser: ArgumentParser):
         parser.add_argument(f"-{ADDITIONAL_FILES_SHORT_PARAMETER}", f"--{ADDITIONAL_FILES_LONG_PARAMETER}",
-                            action=_StringDictParseAction, help="TODO", default=DEFAULT_ADDITIONAL_FILES)
+                            action=KeyValueStringParserAction, default=DEFAULT_ADDITIONAL_FILES,
+                            help="Files to add to the build context (will override existing files). Input in the form:")
         parser.add_argument(f"-{PATCHES_SHORT_PARAMETER}", f"--{PATCHES_LONG_PARAMETER}",
-                            action=_StringDictParseAction, help="TODO", default=DEFAULT_PATCHES)
+                            action=KeyValueStringParserAction, help="TODO", default=DEFAULT_PATCHES)
         parser.add_argument(f"-{DOCKERFILE_LOCATION_SHORT_PARAMETER}", f"--{DOCKERFILE_LOCATION_LONG_PARAMETER}",
                             help="TODO", default=DEFAULT_DOCKERFILE_LOCATION)
         parser.add_argument(f"-{BUILD_LOCATION_SHORT_PARAMETER}", f"--{BUILD_LOCATION_LONG_PARAMETER}",
@@ -170,40 +154,39 @@ def parse_cli_configuration(arguments: List[str]) -> BaseCliConfiguration:
 
 def _set_log_level(level: int):
     """
-    TODO
-    :param level:
-    :return:
+    Sets the log level to that given.
+    :param level: log level to set
     """
     logzero.loglevel(level)
     if level == logging.WARNING:
         logger.warning("There are not likely to be many WARN level logs: consider increasing the verbosity by adding"
                        f"more -{VERBOSITY_SHORT_PARAMETER}")
 
+
 def print_configuration(configuration: BaseCliConfiguration):
     """
-    TODO
-    :param configuration:
-    :return:
+    Prints information about the given configuration to stdout.
+    :param configuration: configuration to output
     """
     configuration_as_json = json.dumps(dataclasses.asdict(configuration))
     print(configuration_as_json)
 
 
-def build(core: Core, configuration: BuildCliConfiguration):
+def build(core: PatchworkDocker, configuration: BuildCliConfiguration):
     """
-    TODO
-    :param core:
-    :param configuration:
+    Builds patchwork Docker image with the given configuration.
+    :param core: patchwork Docker core
+    :param configuration: build configuration
     :return:
     """
     core.build(configuration.image_name, configuration.build_location)
 
 
-def prepare(core: Core, configuration: BuildCliConfiguration):
+def prepare(core: PatchworkDocker, configuration: PrepareCliConfiguration):
     """
-    TODO
-    :param core:
-    :param configuration:
+    Prepares for patchwork Docker build.
+    :param core: patchwork Docker core
+    :param configuration: build configuration
     :return:
     """
     output = core.prepare(configuration.build_location)
@@ -227,9 +210,9 @@ def main(cli_arguments: List[str]):
 
     # XXX: Ideally, we would use `configuration: Intersect[ContextUsingCliConfiguration, SubcommandCliConfiguration]
     # but multiple bounds are sadly not supported in Python's type hinting: https://github.com/python/typing/issues/213
-    def create_core(configuration: Union[PrepareCliConfiguration, BuildCliConfiguration]) -> Core:
-        return Core(configuration.import_from, additional_files=configuration.additional_files,
-                    patches=configuration.patches, dockerfile_location=configuration.dockerfile_location)
+    def create_core(configuration: Union[PrepareCliConfiguration, BuildCliConfiguration]) -> PatchworkDocker:
+        return PatchworkDocker(configuration.import_from, additional_files=configuration.additional_files,
+                               patches=configuration.patches, dockerfile_location=configuration.dockerfile_location)
 
     {
         BuildCliConfiguration: lambda: build(create_core(cli_configuration), cli_configuration),

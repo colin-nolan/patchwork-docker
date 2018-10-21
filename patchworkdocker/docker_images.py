@@ -7,7 +7,7 @@ from thriftybuilder.builders import BuildFailedError as ThriftyBuildFailedError
 from thriftybuilder.builders import DockerBuilder
 from thriftybuilder.builders import logger as thrifty_logger
 
-from patchworkdocker._common import PatchworkDockerError
+from patchworkdocker.errors import PatchworkDockerError
 
 
 class DockerBuildError(PatchworkDockerError):

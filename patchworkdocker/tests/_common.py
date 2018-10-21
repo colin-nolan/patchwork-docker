@@ -1,4 +1,3 @@
-import os
 import shutil
 import unittest
 from abc import ABCMeta
@@ -9,10 +8,9 @@ from typing import List
 
 class TestWithTempFiles(unittest.TestCase, metaclass=ABCMeta):
     """
-    TODO
+    Base class for tests that use temp files.
     """
     def setUp(self):
-        #
         self._paths: List[str] = []
 
     def tearDown(self):
@@ -24,8 +22,8 @@ class TestWithTempFiles(unittest.TestCase, metaclass=ABCMeta):
 
     def create_temp_directory(self) -> str:
         """
-        TODO
-        :return: 
+        Creates a temp directory that will be removed on tear-down.
+        :return: location of the temp directory
         """
         temp_directory = mkdtemp()
         self._paths.append(temp_directory)

@@ -12,17 +12,20 @@ from patchworkdocker.modifiers import copy_file, apply_patch
 _importer_factory = ImporterFactory()
 
 
-class Core:
+class PatchworkDocker:
     """
-    TODO
+    Builds patchwork Docker images.
     """
     def __init__(self, import_repository_from: str, *, additional_files: Dict[str, Optional[str]]=(),
                  patches: Dict[str, str]=frozendict(), dockerfile_location: str="Dockerfile"):
         """
-        TODO
-        :param import_repository_from:
-        :param additional_files: (added in the order given, overwrites possible)
-        :param patches: (applied in the order given)
+        Constructor.
+        :param import_repository_from: where to import the starting materials for the image from
+        :param additional_files: files to add to the build context, where the key is the location on the host and the
+        value (if given) is the relative location in the build context (added in the order given, overwrites possible)
+        :param patches: patches to apply to files in the build context, where the key is the location of the patch file
+        and the value is the location of the file to apply it to, relative to the build context root (applied in the
+        order given)
         :param dockerfile_location: location of the Dockerfile to build, relative to the root of the repository
         """
         self.import_repository_from = import_repository_from
@@ -32,10 +35,9 @@ class Core:
 
     def build(self, image_name: str, build_directory: str=None):
         """
-        TODO
+        Builds the patchworked Docker image.
         :param image_name: image tag (can optionally include a version tag)
-        :param build_directory: TODO
-        :return:
+        :param build_directory: directory to build in
         """
         repository_location = self.prepare(build_directory)
         try:
@@ -49,9 +51,9 @@ class Core:
 
     def prepare(self, build_directory: str=None) -> str:
         """
-        TODO
-        :param build_directory:
-        :return:
+        Prepare a directory with the patched build materials.
+        :param build_directory: the directory to load the patched build context in
+        :return: the location of the build directory
         """
         if build_directory is not None:
             build_directory = os.path.abspath(build_directory)

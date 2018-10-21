@@ -15,8 +15,8 @@ class Importer(metaclass=ABCMeta):
     def _load(self, origin: str, load_directory: str) -> str:
         """
         Loads the build directory from the given origin into the given directory.
-        :param origin:
-        :param load_directory:
+        :param origin: where to import materials from
+        :param load_directory: the directory in which imported materials should be saved
         :return: directory containing the loaded content
         """
 
@@ -26,8 +26,8 @@ class Importer(metaclass=ABCMeta):
         temp directory if `None`.
 
         The returned directory is not cleaned up automatically.
-        :param origin:
-        :param load_directory:
+        :param origin: where to import materials from
+        :param load_directory: the directory in which imported materials should be saved
         :return: directory containing the loaded content
         """
         if load_directory is None:
@@ -77,9 +77,9 @@ class ImporterFactory:
     """
     def create(self, origin: str) -> Importer:
         """
-        TODO
-        :param origin:
-        :return:
+        Create an importer determined by analysis of the given origin.
+        :param origin: where to import materials from
+        :return: importer for the given origin
         """
         if os.path.exists(origin):
             return FileSystemImporter()
