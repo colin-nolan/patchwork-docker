@@ -19,7 +19,12 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-class StringDictActionParser(Action):
+import json
+from argparse import Action
+from json import JSONDecodeError
+
+
+class KeyValueStringParserAction(Action):
     """
     Parses input in the form `xxx:yyy` or a stringified JSON map as a key value pair.
 
