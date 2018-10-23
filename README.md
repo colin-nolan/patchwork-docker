@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/colin-nolan/patchwork-docker.svg?branch=master)](https://travis-ci.org/colin-nolan/patchwork-docker)
+[![codecov](https://codecov.io/gh/colin-nolan/patchwork-docker/branch/master/graph/badge.svg)](https://codecov.io/gh/colin-nolan/patchwork-docker)
+
 # Patchwork Docker
 
 ## Purpose
