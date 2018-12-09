@@ -17,3 +17,6 @@ docker run --rm -it -v "${scriptDirectory}":/patchworkdocker \
                     -e TMPDIR="${tempDirectory}" \
                     --entrypoint=bash \
     patchworkdocker-tests /patchworkdocker/run-tests.sh
+
+# Hack the paths in the coverage report (unfortunately they are absolute)
+docker run --rm -it -v $PWD/:/data alpine sed -i -e "s|\"/patchworkdocker|\"${scriptDirectory}|g" /data/.coverage
