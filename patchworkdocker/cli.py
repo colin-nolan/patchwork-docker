@@ -223,7 +223,7 @@ def main(cli_arguments: List[str]):
 
     {
         BuildCliConfiguration: lambda: build(create_core(cli_configuration), cli_configuration),
-        PrepareCliConfiguration: lambda: build(create_core(cli_configuration), cli_configuration),
+        PrepareCliConfiguration: lambda: prepare(create_core(cli_configuration), cli_configuration),
     }[type(cli_configuration)]()
 
 
