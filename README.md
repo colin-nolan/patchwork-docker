@@ -47,7 +47,7 @@ Prerequisites
 
 The tool can be installed directly from GitHub:
 ```bash
-pip install git+https://github.com/wtsi-hgi/patchwork-docker@master#egg=patchworkdocker
+pip install git+https://github.com/colin-nolan/patchwork-docker@master#egg=patchworkdocker
 ```
 
 
