@@ -50,7 +50,7 @@ class CliTest(TestWithTempFiles):
             output = client.containers.run(image_name)
             self.assertEqual(expected_output, output)
         finally:
-            client.images.remove(image_name)
+            client.images.remove(image_name, force=True)
 
     def _call_wrapped_main(self, *args, **kwargs) -> CaptureResult:
         wrapped_main = self.capture_wrap_builder.build(main)
