@@ -2,3 +2,4 @@ GitPython
 patch==1.*
 logzero
 frozendict
+docker
