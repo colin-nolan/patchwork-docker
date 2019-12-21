@@ -20,20 +20,23 @@ A few basic use cases (`./docker-run.sh` can be used instead of `patchworkdocker
 - To change a base image from `debian:stretch` to `python:3.7-stretch` so as to get the latest version of Python in the 
   image with no hassle:
   ```bash
-  patchworkdocker build example:1.0.0 https://github.com/example/docker-example.git \
-      --base-image python:3.7-stretch
+  patchworkdocker build \
+          --base-image python:3.7-stretch \
+      example:1.0.0 https://github.com/example/docker-example.git
   ```
 - Add an alternate Dockerfile to a pre-existing context:
   ```bash
-  patchworkdocker build example:1.0.0 https://github.com/example/docker-example.git \
-      --additional-file Dockerfile:Dockerfile.example \
-      --dockerfile Dockerfile.example
+  patchworkdocker build \
+          --additional-file Dockerfile:Dockerfile.example \
+          --dockerfile Dockerfile.example \
+      https://github.com/example/docker-example.git example:1.0.0
   ```
 - Change the URL of a piece of software that gets installed into a Docker image:
   ```bash
-  patchworkdocker build example:1.0.0 https://github.com/docker-library/python.git \
-      --dockerfile 3.7/stretch/Dockerfile \
-      --patch change-install-url.patch:Dockerfile
+  patchworkdocker build \
+          --dockerfile 3.7/stretch/Dockerfile \
+          --patch change-install-url.patch:Dockerfile \
+      https://github.com/docker-library/python.git example:1.0.0
   ```
 
 Raspberry Pi users may find this tool particularly useful as, outside the official images, there is often need to 

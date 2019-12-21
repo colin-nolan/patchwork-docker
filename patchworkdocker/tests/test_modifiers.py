@@ -18,8 +18,8 @@ class TestCopyFile(TestWithTempFiles):
     """
     def setUp(self):
         super().setUp()
-        self.src_directory = self.create_temp_directory()
-        self.dest_directory = self.create_temp_directory()
+        self.src_directory = self.temp_manager.create_temp_directory()
+        self.dest_directory = self.temp_manager.create_temp_directory()
 
     def test_empty_src_to_empty_dest(self):
         copy_file(self.src_directory, self.dest_directory)
@@ -71,7 +71,7 @@ class TestApplyPatch(TestWithTempFiles):
 
     def setUp(self):
         super().setUp()
-        temp_directory = self.create_temp_directory()
+        temp_directory = self.temp_manager.create_temp_directory()
         self._dockerfile_location = os.path.join(temp_directory, TestApplyPatch._DOCKERFILE_NAME)
         shutil.copyfile(TestApplyPatch._EXAMPLE_DOCKERFILE_LOCATION, self._dockerfile_location)
 

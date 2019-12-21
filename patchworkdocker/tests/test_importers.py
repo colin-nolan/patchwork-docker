@@ -5,9 +5,7 @@ from pathlib import Path
 from typing import TypeVar, Generic, Optional
 
 from patchworkdocker.importers import GitImporter, Importer, FileSystemImporter
-from patchworkdocker.tests._common import TestWithTempFiles
-
-_EXAMPLE_GIT_REPOSITORY = "https://github.com/colin-nolan/test-repository.git"
+from patchworkdocker.tests._common import TestWithTempFiles, EXAMPLE_GIT_REPOSITORY
 
 ImporterType = TypeVar("ImporterType", bound=Importer)
 
@@ -16,6 +14,7 @@ class _TestImporter(Generic[ImporterType], TestWithTempFiles):
     """
     Tests for `ImporterType`.
     """
+
     @property
     @abstractmethod
     def importer(self) -> ImporterType:
@@ -27,6 +26,7 @@ class _TestImporter(Generic[ImporterType], TestWithTempFiles):
     def setUp(self):
         super().setUp()
         self._importer: Optional[Importer] = None
+        self._paths = []
 
     def load(self, origin: str) -> str:
         """
@@ -35,7 +35,7 @@ class _TestImporter(Generic[ImporterType], TestWithTempFiles):
         :return: the path of where the import has been loaded to
         """
         path = self.importer.load(origin)
-        self._paths.append(path)
+        self.temp_manager._temp_directories.add(path)
         return path
 
 
@@ -43,6 +43,7 @@ class TestGitImporter(_TestImporter[GitImporter]):
     """
     Tests for `GitImporter`.
     """
+
     @property
     def importer(self) -> ImporterType:
         if self._importer is None:
@@ -50,19 +51,19 @@ class TestGitImporter(_TestImporter[GitImporter]):
         return self._importer
 
     def test_load(self):
-        path = self.load(_EXAMPLE_GIT_REPOSITORY)
+        path = self.load(EXAMPLE_GIT_REPOSITORY)
         self.assertTrue(os.path.exists(os.path.join(path, "a/d.txt")))
 
     def test_load_commit(self):
-        path = self.load(f"{_EXAMPLE_GIT_REPOSITORY}#e22fcb940d5356f8dc57fa99d7a6cb4ecdc04b66")
+        path = self.load(f"{EXAMPLE_GIT_REPOSITORY}#e22fcb940d5356f8dc57fa99d7a6cb4ecdc04b66")
         self.assertTrue(os.path.exists(os.path.join(path, "b.txt")))
 
     def test_load_branch(self):
-        path = self.load(f"{_EXAMPLE_GIT_REPOSITORY}#develop")
+        path = self.load(f"{EXAMPLE_GIT_REPOSITORY}#develop")
         self.assertTrue(os.path.exists(os.path.join(path, "develop.txt")))
 
     def test_load_tag(self):
-        path = self.load(f"{_EXAMPLE_GIT_REPOSITORY}#1.0")
+        path = self.load(f"{EXAMPLE_GIT_REPOSITORY}#1.0")
         self.assertTrue(os.path.exists(os.path.join(path, "b.txt")))
 
 
@@ -80,7 +81,7 @@ class TestFileSystemImporter(_TestImporter[GitImporter]):
 
     def setUp(self):
         super().setUp()
-        self.test_directory = self.create_temp_directory()
+        self.test_directory = self.temp_manager.create_temp_directory()
         Path(os.path.join(self.test_directory, TestFileSystemImporter._EXAMPLE_FILE)).touch()
 
     def test_load(self):

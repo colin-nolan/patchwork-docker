@@ -1,30 +1,28 @@
-import shutil
-import unittest
+import os
 from abc import ABCMeta
-from tempfile import mkdtemp
+from unittest import TestCase
+from temphelpers import TempManager
+from uuid import uuid4
+from patchworkdocker.meta import PACKAGE_NAME
 
-from typing import List
+EXAMPLE_GIT_REPOSITORY = "https://github.com/colin-nolan/test-repository.git"
+EXAMPLE_BUILD_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources", "building")
 
 
-class TestWithTempFiles(unittest.TestCase, metaclass=ABCMeta):
+class TestWithTempFiles(TestCase, metaclass=ABCMeta):
     """
     Base class for tests that use temp files.
     """
     def setUp(self):
-        self._paths: List[str] = []
+        self.temp_manager = TempManager()
 
     def tearDown(self):
-        try:
-            for path in self._paths:
-                shutil.rmtree(path)
-        except OSError:
-            pass
+        self.temp_manager.tear_down()
 
-    def create_temp_directory(self) -> str:
-        """
-        Creates a temp directory that will be removed on tear-down.
-        :return: location of the temp directory
-        """
-        temp_directory = mkdtemp()
-        self._paths.append(temp_directory)
-        return temp_directory
+
+def create_image_name():
+    """
+    TODO
+    :return:
+    """
+    return f"{PACKAGE_NAME}-test:{str(uuid4())}"

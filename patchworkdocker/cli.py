@@ -112,8 +112,8 @@ def _create_parser() -> ArgumentParser:
                             help="TODO", default=None)
 
     build_parser = subparsers.add_parser(ActionValue.BUILD.value, help="TODO")
-    build_parser.add_argument(IMAGE_NAME_PARAMETER, help="TODO")
     take_context_arguments(build_parser)
+    build_parser.add_argument(IMAGE_NAME_PARAMETER, help="TODO")
     take_common_arguments(build_parser)
 
     prepare_parser = subparsers.add_parser(ActionValue.PREPARE.value, help="TODO")
@@ -129,10 +129,15 @@ def parse_cli_configuration(arguments: List[str]) -> BaseCliConfiguration:
     :param arguments: the arguments from the CLI
     :return: parsed configuration
     """
+    # XXX: Setting a value other than the display string seems to be non-trivial: https://bugs.python.org/issue23487
     parsed_arguments = _create_parser().parse_args(arguments)
     parsed_arguments = {x.replace("_", "-"): y for x, y in vars(parsed_arguments).items()}
-    # XXX: Setting a value other than the display string seems to be non-trivial: https://bugs.python.org/issue23487
-    parsed_arguments[ACTION_PARAMETER] = ActionValue(parsed_arguments[ACTION_PARAMETER])
+    action_value = parsed_arguments[ACTION_PARAMETER]
+    if action_value is None:
+        logger.error("No action specified")
+        _create_parser().print_help(sys.stderr)
+        exit(1)
+    parsed_arguments[ACTION_PARAMETER] = ActionValue(action_value)
 
     cli_configuration_class = {
         ActionValue.BUILD: BuildCliConfiguration,
@@ -201,7 +206,7 @@ def prepare(core: PatchworkDocker, configuration: PrepareCliConfiguration):
 
 def main(cli_arguments: List[str]):
     """
-    Entrypoint.
+    Main.
     :param cli_arguments: arguments passed in via the CLI
     :raises SystemExit: always raised
     """

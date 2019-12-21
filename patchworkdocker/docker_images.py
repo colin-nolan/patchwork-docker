@@ -1,11 +1,7 @@
-import logging
 import os
 
-from logzero import logger
-from thriftybuilder.build_configurations import DockerBuildConfiguration
-from thriftybuilder.builders import BuildFailedError as ThriftyBuildFailedError
-from thriftybuilder.builders import DockerBuilder
-from thriftybuilder.builders import logger as thrifty_logger
+import docker
+from docker.errors import BuildError
 
 from patchworkdocker.errors import PatchworkDockerError
 
@@ -29,15 +25,8 @@ def build_docker_image(image_name: str, context: str, dockerfile: str):
     if not os.path.isabs(dockerfile):
         raise ValueError(f"Dockerfile location must be absolute: {dockerfile}")
 
-    build_configuration = DockerBuildConfiguration(image_name, dockerfile, context)
-
-    if logger.level <= logging.DEBUG:
-        thrifty_logger.setLevel(logging.DEBUG)
-    logger.info(f"Building Docker image {image_name}..."
-                f"{' (increase log verbosity to see build output)' if logger.level > logging.DEBUG else ''}")
-    builder = DockerBuilder((build_configuration,))
-
+    client = docker.from_env()
     try:
-        builder.build(build_configuration)
-    except ThriftyBuildFailedError as e:
+        client.images.build(path=context, dockerfile=dockerfile, tag=image_name)
+    except BuildError as e:
         raise DockerBuildError(f"Error building image: {image_name}") from e
