@@ -9,7 +9,7 @@ ENV PYTHONPATH=${INSTALL_DIRECTORY}
 RUN architecture="$(uname -m)"; \
 	case "$architecture" in \
 		x86_64) architecture="x86_64" ;; \
-		arm7l) architecture="armhf" ;; \
+		armv7l) architecture="armhf" ;; \
 		*) echo >&2 "Error: unsupported architecture ($architecture)"; exit 1 ;;\
     esac; \
     wget -O /tmp/docker.tgz "https://download.docker.com/linux/static/stable/${architecture}/docker-${dockerVersion}.tgz" && \
