@@ -5,6 +5,5 @@ RUN pip --disable-pip-version-check install -U coverage
 ADD test-requirements.txt /tmp/test-requirements.txt
 RUN pip install -r /tmp/test-requirements.txt
 
-WORKDIR "${INSTALL_DIRECTORY}"
-
+ENTRYPOINT []
 CMD ["./run-tests.sh"]
