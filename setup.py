@@ -9,7 +9,7 @@ setup(
     author_email="cn580@alumni.york.ac.uk",
     packages=find_packages(exclude=["tests"]),
     install_requires=open("requirements.txt", "r").readlines(),
-    url="https://github.com/wtsi-hgi/patchwork-docker",
+    url="https://github.com/colin-nolan/patchwork-docker",
     license="MIT",
     description=DESCRIPTION,
     long_description=open("README.md", "r").read(),
