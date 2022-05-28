@@ -60,3 +60,7 @@ Up-to-date usage information can be seen with:
 patchworkdocker --help
 patchworkdocker build --help
 ```
+
+
+## Legal
+This work is in no way related to the company that I work for.
