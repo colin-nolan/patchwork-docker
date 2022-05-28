@@ -35,7 +35,7 @@ def apply_patch(patch_file: str, target_file: str):
     """
     patch_set = fromfile(patch_file)
     if not patch_set:
-        raise SyntaxError("Could not parse contents of patch file")
+        raise SyntaxError(f"Could not parse contents of patch file: {patch_file}")
 
     hunks = list(itertools.chain(*[item.hunks for item in patch_set.items]))
 

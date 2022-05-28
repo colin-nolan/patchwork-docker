@@ -21,21 +21,21 @@ A few basic use cases (`./docker-run.sh` can be used instead of `patchworkdocker
   image with no hassle:
   ```bash
   patchworkdocker build \
-          --base-image python:3.7-stretch \
+      --base-image python:3.7-stretch \
       example:1.0.0 https://github.com/example/docker-example.git
   ```
 - Add an alternate Dockerfile to a pre-existing context:
   ```bash
   patchworkdocker build \
-          --additional-file Dockerfile:Dockerfile.example \
-          --dockerfile Dockerfile.example \
+      --additional-file Dockerfile:Dockerfile.example \
+      --dockerfile Dockerfile.example \
       https://github.com/example/docker-example.git example:1.0.0
   ```
 - Change the URL of a piece of software that gets installed into a Docker image:
   ```bash
   patchworkdocker build \
-          --dockerfile 3.7/stretch/Dockerfile \
-          --patch change-install-url.patch:Dockerfile \
+      --dockerfile 3.7/stretch/Dockerfile \
+      --patch change-install-url.patch:Dockerfile \
       https://github.com/docker-library/python.git example:1.0.0
   ```
 
